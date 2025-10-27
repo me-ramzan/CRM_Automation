@@ -1,0 +1,296 @@
+{
+  "name": "lgm hubspot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lgm-reply",
+        "options": {}
+      },
+      "id": "aaeeb88b-4bf3-4c5b-9a0e-1e1dce39e782",
+      "name": "LGM Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -896,
+        208
+      ],
+      "webhookId": "21dcd4cc-d4e1-46b2-ab8a-0096d3871b3a"
+    },
+    {
+      "parameters": {
+        "functionCode": "const inData = $json;\nconst email = inData.sender?.email || null;\nconst firstName = inData.sender?.firstName || (inData.sender?.name || '').split(' ')[0] || '';\nconst lastName = inData.sender?.lastName || (inData.sender?.name || '').split(' ').slice(1).join(' ') || '';\nconst linkedinId = inData.sender?.linkedinId || null;\nconst threadId = inData.thread?.id || inData.conversationId || null;\nconst messageBody = inData.message?.body || inData.text || '';\nconst campaignName = inData.campaign?.name || '';\n\nreturn [{\n  json: {\n    email, firstName, lastName, linkedinId, threadId, messageBody, campaignName, rawPayload: inData\n  }\n}];"
+      },
+      "id": "7318c7f6-4e13-4a56-af3c-740300300a77",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "ab7dc7c6-f9a9-41e4-ab39-ba4a45db0963",
+      "name": "Search Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Search Contact\"].json[\"total\"]}}",
+              "operation": "greater"
+            }
+          ]
+        }
+      },
+      "id": "a24c94b4-8ba7-41c9-807b-7ac6c7e29d15",
+      "name": "Contact Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "={{`https://api.hubapi.com/crm/v3/objects/contacts/${$node[\"Search Contact\"].json[\"results\"][0].id}`}}",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "f5666c0f-8026-4c83-8e98-1798840e3b30",
+      "name": "Update Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "45906725-ee18-4ffc-bb3f-31c40702a8d3",
+      "name": "Create Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "https://api.hubapi.com/crm/v3/objects/deals/search",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "b99ed611-cccf-4ced-a77e-65e5dd628238",
+      "name": "Search Deal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        256,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$node[\"Search Deal\"].json[\"total\"]}}",
+              "operation": "greater"
+            }
+          ]
+        }
+      },
+      "id": "d747406b-f04a-48c1-9caf-8b0d0df914b2",
+      "name": "Deal Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        464,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "https://api.hubapi.com/crm/v3/objects/deals",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "877adae7-bf58-46bf-9017-9f543156306c",
+      "name": "Create Deal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        656,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "url": "https://api.hubapi.com/crm/v3/objects/notes",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "655f98fd-9063-45e0-bfa3-e3f249cbc490",
+      "name": "Create Note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        864,
+        112
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "LGM Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Search Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Contact": {
+      "main": [
+        [
+          {
+            "node": "Contact Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact Found?": {
+      "main": [
+        [
+          {
+            "node": "Update Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Contact": {
+      "main": [
+        [
+          {
+            "node": "Search Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact": {
+      "main": [
+        [
+          {
+            "node": "Search Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Deal": {
+      "main": [
+        [
+          {
+            "node": "Deal Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deal Found?": {
+      "main": [
+        [
+          {
+            "node": "Create Note",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Deal": {
+      "main": [
+        [
+          {
+            "node": "Create Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6bddf7d4-5e80-4f73-b156-774e98e8cad2",
+  "meta": {
+    "instanceId": "e08608bb3cc6241ab47739ddf438bc2f4d3f12dec51cc8f299735b38bcacd5f6"
+  },
+  "id": "PKAFz8Vbpj57YAXj",
+  "tags": []
+}
